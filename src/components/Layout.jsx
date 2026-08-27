@@ -10,12 +10,19 @@ import {
   Settings as SettingsIcon,
   Menu,
   LogOut,
-  FileText
+  FileText,
+  Home
 } from 'lucide-react';
 
 const navItems = [
   { label: 'Dashboard', path: '/', icon: LayoutDashboard },
   { label: 'New Quote', path: '/quotes/new', icon: FilePlus2 },
+  { label: 'Customers', path: '/customers', icon: Users },
+  { label: 'Settings', path: '/settings', icon: SettingsIcon }
+];
+
+const tabItems = [
+  { label: 'Dashboard', path: '/', icon: Home },
   { label: 'Customers', path: '/customers', icon: Users },
   { label: 'Settings', path: '/settings', icon: SettingsIcon }
 ];
@@ -46,9 +53,41 @@ function NavLinks({ onNavigate }) {
   );
 }
 
+function BottomTabBar() {
+  const location = useLocation();
+  return (
+    <nav
+      className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur"
+      style={{ paddingBottom: 'var(--safe-bottom)' }}
+    >
+      <div className="flex items-stretch justify-around h-14">
+        {tabItems.map((item) => {
+          const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] ${
+                active ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 export default function Layout() {
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [brand, setBrand] = useState('QuoteMaker');
+
+  const hideTopBar = location.pathname.startsWith('/quotes/');
 
   useEffect(() => {
     (async () => {
@@ -65,6 +104,7 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Desktop sidebar */}
       <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col border-r bg-sidebar p-5">
         <Link to="/" className="flex items-center gap-2.5 px-1 mb-8">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
@@ -80,39 +120,47 @@ export default function Layout() {
         </div>
       </aside>
 
-      <div className="md:hidden flex items-center justify-between border-b px-4 h-14 sticky top-0 bg-background z-40">
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-5 flex flex-col">
-            <Link to="/" onClick={() => setOpen(false)} className="flex items-center gap-2.5 mb-8">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <FileText className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <span className="font-display text-lg">{brand}</span>
-            </Link>
-            <NavLinks onNavigate={() => setOpen(false)} />
-            <div className="mt-auto pt-4 border-t">
-              <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-3" /> Logout
+      {/* Mobile top bar — hidden on quote sub-pages to avoid redundant nav */}
+      {!hideTopBar && (
+        <div
+          className="md:hidden flex items-center justify-between border-b px-4 sticky top-0 bg-background z-40"
+          style={{ paddingTop: 'var(--safe-top)', height: 'calc(3.5rem + var(--safe-top))' }}
+        >
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
               </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
-        <span className="font-display text-lg">{brand}</span>
-        <Link to="/quotes/new">
-          <Button size="sm">New Quote</Button>
-        </Link>
-      </div>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-5 flex flex-col">
+              <Link to="/" onClick={() => setOpen(false)} className="flex items-center gap-2.5 mb-8">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+                  <FileText className="h-4 w-4 text-primary-foreground" />
+                </div>
+                <span className="font-display text-lg">{brand}</span>
+              </Link>
+              <NavLinks onNavigate={() => setOpen(false)} />
+              <div className="mt-auto pt-4 border-t">
+                <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-3" /> Logout
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+          <span className="font-display text-lg">{brand}</span>
+          <Link to="/quotes/new">
+            <Button size="sm">New Quote</Button>
+          </Link>
+        </div>
+      )}
 
       <main className="md:pl-64">
-        <div className="mx-auto max-w-6xl px-4 md:px-10 py-6 md:py-12">
+        <div className="mx-auto max-w-6xl px-4 md:px-10 py-6 md:py-12 pb-24 md:pb-12">
           <Outlet />
         </div>
       </main>
+
+      <BottomTabBar />
     </div>
   );
 }

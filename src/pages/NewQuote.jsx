@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import ResponsiveSelect from '@/components/ResponsiveSelect';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { Sparkles, Loader2, ArrowLeft, Save, Send, AlertCircle } from 'lucide-react';
@@ -213,18 +213,12 @@ export default function NewQuote() {
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
                 <Label className="text-xs">Profession</Label>
-                <Select value={profession} onValueChange={setProfession}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PROFESSIONS.map((p) => (
-                      <SelectItem key={p} value={p}>
-                        {p}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ResponsiveSelect
+                  className="mt-1"
+                  value={profession}
+                  onValueChange={setProfession}
+                  options={PROFESSIONS.map((p) => ({ value: p, label: p }))}
+                />
               </div>
               <div className="flex items-end">
                 <Button onClick={handleGenerate} disabled={generating} className="h-10 w-full sm:w-auto">
@@ -312,18 +306,12 @@ export default function NewQuote() {
                 </div>
               </div>
             ) : (
-              <Select value={customerId} onValueChange={setCustomerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a customer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ResponsiveSelect
+                value={customerId}
+                onValueChange={setCustomerId}
+                placeholder="Select a customer"
+                options={customers.map((c) => ({ value: c.id, label: c.name }))}
+              />
             )}
           </Card>
 

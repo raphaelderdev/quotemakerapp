@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { Image } from '@/components/ui/image';
-import { Upload, Loader2, Save } from 'lucide-react';
+import { Upload, Loader2, Save, AlertTriangle, Trash2 } from 'lucide-react';
+import ResponsiveSelect from '@/components/ResponsiveSelect';
 import { PROFESSIONS } from '@/lib/quoteUtils';
 
 const CURRENCIES = ['EUR', 'GBP', 'USD', 'CHF', 'CAD', 'AUD'];
@@ -18,7 +19,23 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await base44.functions.invoke('deleteMyAccount', {});
+      toast({ title: 'Account deleted' });
+      base44.auth.logout();
+    } catch (e) {
+      toast({ title: 'Could not delete account', description: e.message, variant: 'destructive' });
+      setDeleting(false);
+      setConfirmText('');
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -132,18 +149,12 @@ export default function Settings() {
         </div>
         <div>
           <Label className="text-xs">Profession</Label>
-          <Select value={profile.profession} onValueChange={(v) => set('profession', v)}>
-            <SelectTrigger className="mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PROFESSIONS.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ResponsiveSelect
+            className="mt-1"
+            value={profile.profession}
+            onValueChange={(v) => set('profession', v)}
+            options={PROFESSIONS.map((p) => ({ value: p, label: p }))}
+          />
         </div>
       </Card>
 
@@ -195,18 +206,12 @@ export default function Settings() {
           </div>
           <div>
             <Label className="text-xs">Currency</Label>
-            <Select value={profile.currency} onValueChange={(v) => set('currency', v)}>
-              <SelectTrigger className="mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CURRENCIES.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ResponsiveSelect
+              className="mt-1"
+              value={profile.currency}
+              onValueChange={(v) => set('currency', v)}
+              options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+            />
           </div>
         </div>
         <div>
@@ -226,6 +231,49 @@ export default function Settings() {
           Save settings
         </Button>
       </div>
+
+      <Card className="p-5 md:p-6 space-y-3 border-destructive/30 bg-destructive/5">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-destructive" />
+          <h2 className="font-medium text-destructive">Danger Zone</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Permanently delete your account and sign out. This action cannot be undone.
+        </p>
+        <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+          <Trash2 className="h-4 w-4 mr-2" /> Delete my account
+        </Button>
+      </Card>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete account?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This permanently deletes your account. Type{' '}
+            <span className="font-semibold text-foreground">DELETE</span> to confirm.
+          </p>
+          <Input
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder="DELETE"
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={confirmText !== 'DELETE' || deleting}
+              onClick={handleDeleteAccount}
+            >
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete permanently
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

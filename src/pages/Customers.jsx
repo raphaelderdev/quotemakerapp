@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger
 } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import ResponsiveSelect from '@/components/ResponsiveSelect';
 import { useToast } from '@/components/ui/use-toast';
 import { Plus, Trash2, Users, Mail, Phone } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
@@ -115,18 +115,12 @@ export default function Customers() {
               </div>
               <div>
                 <Label className="text-xs">Profession</Label>
-                <Select value={form.profession} onValueChange={(v) => setForm({ ...form, profession: v })}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PROFESSIONS.map((p) => (
-                      <SelectItem key={p} value={p}>
-                        {p}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ResponsiveSelect
+                  className="mt-1"
+                  value={form.profession}
+                  onValueChange={(v) => setForm({ ...form, profession: v })}
+                  options={PROFESSIONS.map((p) => ({ value: p, label: p }))}
+                />
               </div>
               <div>
                 <Label className="text-xs">Notes</Label>
