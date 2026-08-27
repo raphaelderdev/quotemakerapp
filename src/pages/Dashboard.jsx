@@ -15,6 +15,7 @@ import {
 import QuoteStatusBadge from '@/components/QuoteStatusBadge';
 import StatCard from '@/components/StatCard';
 import EmptyState from '@/components/EmptyState';
+import PullToRefresh from '@/components/PullToRefresh';
 import { formatCurrency, todayISO } from '@/lib/quoteUtils';
 
 const FILTERS = ['all', 'draft', 'sent', 'accepted', 'rejected'];
@@ -26,21 +27,23 @@ export default function Dashboard() {
   const [filter, setFilter] = useState('all');
   const [currency, setCurrency] = useState('EUR');
 
+  const load = async () => {
+    try {
+      const [list, profiles] = await Promise.all([
+        base44.entities.Quote.list('-created_date', 200),
+        base44.entities.BusinessProfile.list()
+      ]);
+      setQuotes(list || []);
+      if (profiles && profiles.length) setCurrency(profiles[0].currency || 'EUR');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const [list, profiles] = await Promise.all([
-          base44.entities.Quote.list('-created_date', 200),
-          base44.entities.BusinessProfile.list()
-        ]);
-        setQuotes(list || []);
-        if (profiles && profiles.length) setCurrency(profiles[0].currency || 'EUR');
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    load();
   }, []);
 
   const stats = useMemo(() => {
@@ -65,6 +68,7 @@ export default function Dashboard() {
   const filtered = filter === 'all' ? quotes : quotes.filter((q) => q.status === filter);
 
   return (
+    <PullToRefresh onRefresh={load}>
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -193,5 +197,6 @@ export default function Dashboard() {
         )}
       </div>
     </div>
+    </PullToRefresh>
   );
 }

@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import {
   LayoutDashboard,
   FilePlus2,
@@ -26,6 +28,12 @@ const tabItems = [
   { label: 'Customers', path: '/customers', icon: Users },
   { label: 'Settings', path: '/settings', icon: SettingsIcon }
 ];
+
+function tabForPath(p) {
+  if (p.startsWith('/customers')) return '/customers';
+  if (p.startsWith('/settings')) return '/settings';
+  return '/';
+}
 
 function NavLinks({ onNavigate }) {
   const location = useLocation();
@@ -55,6 +63,35 @@ function NavLinks({ onNavigate }) {
 
 function BottomTabBar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const stacks = useRef({
+    '/': ['/'],
+    '/customers': ['/customers'],
+    '/settings': ['/settings']
+  });
+
+  useEffect(() => {
+    const tab = tabForPath(location.pathname);
+    const stack = stacks.current[tab];
+    if (location.pathname === tab) {
+      stacks.current[tab] = [tab];
+    } else if (stack[stack.length - 1] !== location.pathname) {
+      stack.push(location.pathname);
+    }
+  }, [location.pathname]);
+
+  const handleTab = (tabRoot) => {
+    const currentTab = tabForPath(location.pathname);
+    if (tabRoot === currentTab) {
+      // Clicking the active tab returns it to its root
+      navigate(tabRoot);
+    } else {
+      // Switching tabs restores the last page viewed in that tab's stack
+      const stack = stacks.current[tabRoot];
+      navigate(stack[stack.length - 1] || tabRoot);
+    }
+  };
+
   return (
     <nav
       className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur"
@@ -62,23 +99,42 @@ function BottomTabBar() {
     >
       <div className="flex items-stretch justify-around h-14">
         {tabItems.map((item) => {
-          const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
+          const active = tabForPath(location.pathname) === item.path;
           const Icon = item.icon;
           return (
-            <Link
+            <button
               key={item.path}
-              to={item.path}
+              type="button"
+              onClick={() => handleTab(item.path)}
               className={`flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] ${
                 active ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
               <Icon className="h-5 w-5" />
               {item.label}
-            </Link>
+            </button>
           );
         })}
       </div>
     </nav>
+  );
+}
+
+function AnimatedOutlet() {
+  const location = useLocation();
+  const isMobile = useIsMobile();
+  if (!isMobile) return <Outlet />;
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, x: 24 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.22, ease: 'easeOut' }}
+      >
+        <Outlet />
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -155,8 +211,8 @@ export default function Layout() {
       )}
 
       <main className="md:pl-64">
-        <div className="mx-auto max-w-6xl px-4 md:px-10 py-6 md:py-12 pb-24 md:pb-12">
-          <Outlet />
+        <div className="mx-auto max-w-6xl px-4 md:px-10 py-6 md:py-12 pb-24 md:pb-12 overflow-hidden">
+          <AnimatedOutlet />
         </div>
       </main>
 

@@ -16,6 +16,7 @@ import ResponsiveSelect from '@/components/ResponsiveSelect';
 import { useToast } from '@/components/ui/use-toast';
 import { Plus, Trash2, Users, Mail, Phone } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
+import PullToRefresh from '@/components/PullToRefresh';
 import { PROFESSIONS } from '@/lib/quoteUtils';
 
 export default function Customers() {
@@ -45,28 +46,42 @@ export default function Customers() {
       toast({ title: 'Name is required', variant: 'destructive' });
       return;
     }
+    const tempId = `temp-${Date.now()}`;
+    const optimistic = { ...form, id: tempId };
+    setCustomers((prev) => [optimistic, ...prev]);
+    setForm({ name: '', email: '', phone: '', profession: 'Plumber', notes: '' });
+    setOpen(false);
     try {
       await base44.entities.Customer.create(form);
-      setForm({ name: '', email: '', phone: '', profession: 'Plumber', notes: '' });
-      setOpen(false);
       toast({ title: 'Customer added' });
       load();
     } catch (e) {
+      setCustomers((prev) => prev.filter((c) => c.id !== tempId));
       toast({ title: 'Failed to add customer', variant: 'destructive' });
     }
   };
 
   const remove = async (cid) => {
     if (!confirm('Delete this customer?')) return;
+    const removed = customers.find((c) => c.id === cid);
+    const removedIndex = customers.findIndex((c) => c.id === cid);
+    setCustomers((prev) => prev.filter((c) => c.id !== cid));
     try {
       await base44.entities.Customer.delete(cid);
-      load();
+      toast({ title: 'Customer deleted' });
     } catch (e) {
+      setCustomers((prev) => {
+        if (!removed) return prev;
+        const next = prev.slice();
+        next.splice(Math.max(removedIndex, 0), 0, removed);
+        return next;
+      });
       toast({ title: 'Failed to delete', variant: 'destructive' });
     }
   };
 
   return (
+    <PullToRefresh onRefresh={load}>
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -187,5 +202,6 @@ export default function Customers() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   );
 }
